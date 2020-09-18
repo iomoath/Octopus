@@ -9,7 +9,6 @@
 # Ex : /anything.php
 file_receiver_url = "/messages"
 
-
 # handling the report generation
 # Ex : /anything
 # Ex : /anything.php
@@ -22,12 +21,10 @@ report_url = "/calls"
 # Ex : /bills/<hostname>
 command_send_url = "/view/<hostname>"
 
-
 # handling the executed command
 # Ex : /anything
 # Ex : /anything.php
 command_receiver_url = "/bills"
-
 
 # handling the first connection from the agent
 # Ex : /anything
