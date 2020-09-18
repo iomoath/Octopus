@@ -3,13 +3,13 @@
 from termcolor import colored
 import tabulate
 from .functions import listeners_information
+
 avs = []
 
-
 AV_list = {
-    "Kaspersky":    ["avp", "avpui", "klif", "KAVFS", "kavfsslp"],
-    "Symantec":    ["SmcGui", "SISIPSService"],
-    "Avast":    ["aswBcc", "bcc"],
+    "Kaspersky": ["avp", "avpui", "klif", "KAVFS", "kavfsslp"],
+    "Symantec": ["SmcGui", "SISIPSService"],
+    "Avast": ["aswBcc", "bcc"],
     "Bitdefender": ["epag", "EPIntegrationService", "EPProtectedService", "EPSecurityService"],
     "Cylance": ["CylanceSvc", "CylanceUi"],
     "ESET": ["epfw", "epfwlwf", "epfwwfp"],
@@ -23,15 +23,15 @@ AV_list = {
     "ZoneALarm": ["zlclient"],
     "Panda AntiVirus": ["AVENGINE"],
     "AVG": ["avgemc"],
-    "Avira" : ["avscan"],
-    "G data" : ["AVKProxy"],
+    "Avira": ["avscan"],
+    "G data": ["AVKProxy"],
 
 }
 SIEM = {
 
-    "winlogbeat":"winlogbeat",
-    "splunk":"splunkd",
-    "splunk":"splunk"
+    "winlogbeat": "winlogbeat",
+    "splunk": "splunkd",
+    "splunk": "splunk"
 }
 
 
@@ -92,4 +92,4 @@ def esa(processes, session):
     print("Device language : %s" % language)
     print("Device uptime : %s hours" % uptime)
     print("Device local time : %s" % systime)
-    #print "Installed APPs : "
+    # print "Installed APPs : "

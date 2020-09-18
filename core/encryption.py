@@ -7,7 +7,6 @@ import string
 import random
 from .functions import *
 
-
 # block_size
 block_size = AES.block_size
 
