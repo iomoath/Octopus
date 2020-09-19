@@ -1,0 +1,45 @@
+﻿using System;
+
+namespace OctopusNET
+{
+    internal class Program
+    {
+        //private static readonly Mutex Mutex = new Mutex(false, "demo");
+
+        public Program()
+        {
+            AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        }
+
+        private static int Main()
+        {
+            //if (!Mutex.WaitOne(TimeSpan.FromSeconds(1), false))
+            //{   // Open PDF/Word file ?
+            //    return 0;
+            //}
+            var c = new Program();
+            return c.RunProgram();
+        }
+
+        private int RunProgram()
+        {   
+            var s = new SvcProgram();
+            s.Start();
+            s.Wait();
+            return 0;
+        }
+
+
+        private void OnUnhandledException(object sender, UnhandledExceptionEventArgs args)
+        {
+            if (args == null)
+                return;
+
+            if (args.IsTerminating)
+            {
+                RunProgram();
+            }
+        }
+
+    }
+}

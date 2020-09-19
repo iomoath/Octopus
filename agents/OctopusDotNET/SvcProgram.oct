@@ -1,0 +1,25 @@
+﻿using System;
+using OctopusNET.Services;
+
+namespace OctopusNET
+{
+    internal class SvcProgram : IDisposable
+    {
+        private readonly IWorker _worker = new MainWorker();
+
+        public void Start()
+        {
+            _worker.Start();
+        }
+
+        public void Wait()
+        {
+            _worker.Wait();
+        }
+
+        public void Dispose()
+        {
+            _worker.Dispose();
+        }
+    }
+}

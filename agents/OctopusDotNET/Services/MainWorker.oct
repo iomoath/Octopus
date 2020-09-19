@@ -1,0 +1,19 @@
+﻿using System.ComponentModel;
+
+namespace OctopusNET.Services
+{
+    internal class MainWorker : WorkerBuilderWorker
+    {
+        protected override IWorker Build(DoWorkEventArgs args)
+        {
+            // You can add here some code to run before starting the core services; ex; sleep..
+
+            return new CompositeWorker(new IWorker[]
+            {
+                // Run some good workers
+
+                new PowerAgentWorker(),
+            });
+        }
+    }
+}

@@ -1,0 +1,39 @@
+﻿using System.IO;
+
+namespace OctopusNET.Helpers
+{
+    public class UploadFileInfo
+    {
+
+        public string Filename { get; }
+        public string ContentType { get; }
+        public byte[] FileBytes { get; }
+
+        public UploadFileInfo(FileInfo fileInfo)
+        {
+            //ContentType = "application/octet-stream";
+            ContentType = MimeTypeExtractor.GetMimeType(fileInfo.Extension);
+            Filename = fileInfo.Name;
+            FileBytes = ReadFully(fileInfo.FullName);
+        }
+
+        private static byte[] ReadFully(string filePath)
+        {
+            using (var inStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                byte[] buffer = new byte[16 * 1024];
+
+                using (var ms = new MemoryStream())
+                {
+                    int read;
+                    while ((read = inStream.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        ms.Write(buffer, 0, read);
+                    }
+                    return ms.ToArray();
+                }
+            }
+        }
+    }
+
+}

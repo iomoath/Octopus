@@ -1,0 +1,196 @@
+﻿using System;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
+using System.Management;
+
+namespace OctopusNET.Helpers
+{
+    internal class SystemInfoHelpers
+    {
+        private static readonly Lazy<SystemInfoHelpers> LazyInstance = new Lazy<SystemInfoHelpers>(Load);
+        public static SystemInfoHelpers Instance => LazyInstance.Value;
+        private static readonly Random Random = new Random();
+
+        public SysInfo SystemInfo;
+        public string SystemInfoCombined;
+        private static string _hostnameTrial;
+
+        private static SystemInfoHelpers Load()
+        {
+            _hostnameTrial = GenerateRandChars(true);
+
+            return new SystemInfoHelpers
+            {
+                SystemInfoCombined = GetSysInfoCombined(),
+                SystemInfo = GetSysInfo()
+            };
+        }
+
+        public struct SysInfo
+        {
+            public string Hostname { get; set; }
+            public string Uuid { get; set; }
+            public string Domain { get; set; }
+            public string Username { get; set; }
+            public string OsName { get; set; }
+            public string CultureCode { get; set; }
+            public bool Is64BitOperatingSystem { get; set; }
+            public int AgentProcessId { get; set; }
+        }
+
+        public static string Get_UUID()
+        {
+            try
+            {
+                // return Helpers.ExecCommand("cmd.exe", "/C wmic csproduct get uuid");
+
+                using (var mc = new ManagementClass("Win32_ComputerSystemProduct"))
+                {
+                    foreach (var mo in mc.GetInstances())
+                    {
+                        try
+                        {
+                            var value = mo["UUID"] as string;
+                            if (!string.IsNullOrEmpty(value))
+                            {
+                                return value;
+                            }
+                        }
+                        finally
+                        {
+                            mo.Dispose();
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                //
+            }
+            return null;
+        }
+
+        private static SysInfo GetSysInfo()
+        {
+            try
+            {
+                return new SysInfo
+                {
+                    Hostname = GetHostname(),
+                    AgentProcessId = GetProcessId(),
+                    CultureCode = CultureInfo.InstalledUICulture.Name,
+                    Domain = GetDomainName(),
+                    Is64BitOperatingSystem = Environment.Is64BitOperatingSystem,
+                    OsName = GetOsName(),
+                    Uuid = Get_UUID(),
+                    Username = Environment.UserName
+                };
+            }
+            catch (Exception)
+            {
+                return new SysInfo();
+            }
+        }
+
+        /// <summary>
+        /// Separated by ,
+        /// </summary>
+        /// <returns></returns>
+        private static string GetSysInfoCombined()
+        {
+            try
+            {
+                var arr = new[]
+                {
+                    $"{GetHostname()}", // 0
+                    $"{Environment.UserName}", // 1
+                    $"{GetOsName()}({GetOsArchitecture()})", //2
+                    $"{GetProcessId()}", // 3
+                    $"{GetDomainName()}", // 4
+                   // $"{CultureInfo.InstalledUICulture.Name}",
+                   // $"{Get_UUID()}"
+                };
+
+                return string.Join(",", arr).Trim();
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string GetHostname()
+        {
+            try
+            {
+                var hostName = $"{Environment.MachineName}";
+                hostName = $"{hostName}-{_hostnameTrial}";
+                return hostName.Trim();
+            }
+            catch (Exception)
+            {
+                return Environment.MachineName;
+            }
+        }
+
+
+
+        private static string GenerateRandChars(bool capLetters, int length = 5)
+        {
+            const string chars = "abcdefghijklmnopqrstuvwxyz";
+            var c = new string(Enumerable.Repeat(chars, length)
+                .Select(s => s[Random.Next(s.Length)]).ToArray());
+
+            if (capLetters)
+                return c.ToUpper();
+            return c;
+        }
+
+        private static int GetProcessId()
+        {
+            return Process.GetCurrentProcess().Id;
+        }
+
+        private static string GetDomainName()
+        {
+            ManagementObject cs;
+            using (cs = new ManagementObject("Win32_ComputerSystem.Name='" + Environment.MachineName + "'"))
+            {
+                cs.Get();
+                return cs["domain"]?.ToString()?.Trim();
+            }
+        }
+
+        private static string GetOsName()
+        {
+            var result = string.Empty;
+            using (var searcher = new ManagementObjectSearcher("SELECT Caption FROM Win32_OperatingSystem"))
+            {
+                foreach (var o in searcher.Get())
+                {
+                    var os = (ManagementObject)o;
+                    result = os["Caption"].ToString();
+                    break;
+                }
+                return result?.Trim();
+            }
+        }
+
+        private static string GetOsArchitecture()
+        {
+            string architecture = null;
+            using (var search = new ManagementObjectSearcher("SELECT * FROM Win32_OperatingSystem"))
+            {
+                foreach (var obj in search.Get())
+                {
+                    architecture = obj["OSArchitecture"].ToString();
+                }
+                return architecture?.Trim();
+            }
+
+        }
+    }
+
+
+}

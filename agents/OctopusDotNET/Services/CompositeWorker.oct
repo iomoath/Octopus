@@ -1,0 +1,107 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
+
+namespace OctopusNET.Services
+{
+    internal class CompositeWorker : IWorker
+    {
+        private readonly List<IWorker> _workers = new List<IWorker>();
+        private bool _running;
+        private int _runningWorkers;
+        private readonly ManualResetEvent _completedEvent = new ManualResetEvent(false);
+
+        public CompositeWorker()
+        {
+        }
+
+        public CompositeWorker(IEnumerable<IWorker> workers) : this()
+        {
+            AddRange(workers);
+        }
+
+        public void Add(IWorker worker)
+        {
+            if (worker == null) throw new ArgumentNullException(nameof(worker));
+            worker.Completed += WorkerOnCompleted;
+            _workers.Add(worker);
+            if (_running) StartWorker(worker);
+        }
+
+        private void WorkerOnCompleted(object sender, EventArgs eventArgs)
+        {
+            var currentValue = Interlocked.Decrement(ref _runningWorkers);
+            if (currentValue == 0)
+            {
+                _completedEvent.Set();
+                OnCompleted();
+            }
+        }
+
+        public void AddRange(IEnumerable<IWorker> workers)
+        {
+            if (workers == null) throw new ArgumentNullException(nameof(workers));
+            foreach (var worker in workers)
+            {
+                Add(worker);
+            }
+        }
+
+        public void Remove(IWorker worker)
+        {
+            if (_workers.Remove(worker) && _running)
+            {
+                worker.Cancel();
+                worker.Wait();
+            }
+        }
+
+        public void Dispose()
+        {
+            foreach (var worker in _workers)
+            {
+                worker.Dispose();
+            }
+            _workers.Clear();
+            _completedEvent.Close();
+        }
+
+        public void Start()
+        {
+            _completedEvent.Reset();
+            _running = true;
+            foreach (var worker in _workers)
+            {
+                StartWorker(worker);
+            }
+        }
+
+        private void StartWorker(IWorker worker)
+        {
+            Interlocked.Increment(ref _runningWorkers);
+            worker.Start();
+        }
+
+        public void Cancel()
+        {
+            _running = false;
+            foreach (var worker in _workers)
+            {
+                worker.Cancel();
+            }
+        }
+
+        public void Wait()
+        {
+            _completedEvent.WaitOne();
+        }
+
+        public event EventHandler Completed;
+
+        protected virtual void OnCompleted()
+        {
+            Completed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+}

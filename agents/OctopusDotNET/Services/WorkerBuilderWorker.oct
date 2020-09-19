@@ -1,0 +1,26 @@
+﻿using System.ComponentModel;
+
+namespace OctopusNET.Services
+{
+    internal abstract class WorkerBuilderWorker : TaskWorker
+    {
+        private IWorker _worker;
+
+        protected sealed override void Work(DoWorkEventArgs args)
+        {
+            _worker = Build(args);
+            if (_worker == null) return;
+            _worker.Start();
+            _worker.Wait();
+        }
+
+        protected override void OnCancelled()
+        {
+            base.OnCancelled();
+            _worker?.Cancel();
+        }
+
+        protected abstract IWorker Build(DoWorkEventArgs args);
+    }
+
+}

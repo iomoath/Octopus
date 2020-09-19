@@ -1,0 +1,168 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Management;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Text;
+
+namespace OctopusNET.Helpers
+{
+    public static class CommonHelpers
+    {
+        public static string ToBase64String(string str, Encoding encoding)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(str))
+                {
+                    return str;
+                }
+
+                var textAsBytes = encoding.GetBytes(str);
+                var base64Str = Convert.ToBase64String(textAsBytes);
+                return base64Str;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        public static string Base64ToText(string base64Str, Encoding encoding)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(base64Str))
+                {
+                    return base64Str;
+                }
+
+                var textAsBytes = Convert.FromBase64String(base64Str);
+                var decodedText = encoding.GetString(textAsBytes);
+                return decodedText;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+
+        public static string ToBase64String(byte[] bytes)
+        {
+            var data = Convert.ToBase64String(bytes);
+            return data;
+        }
+
+        public static string GetUrl(string url, Dictionary<string, string> headers, string userAgent)
+        {
+            if(string.IsNullOrEmpty(url))
+                throw new ArgumentNullException(nameof(url));
+
+            using (var wb = new WebClient())
+            {
+                foreach (var kvp in headers ?? new Dictionary<string, string>())
+                {
+                    wb.Headers.Add(kvp.Key, kvp.Value);
+                    
+                }
+                
+                if(!string.IsNullOrEmpty(url) && headers != null && !headers.ContainsKey("User-Agent"))
+                    wb.Headers.Add("User-Agent", userAgent);
+
+                return wb.DownloadString(url);
+            }
+        }
+
+
+        public static string UploadString(Dictionary<string, object> paramDict, Dictionary<string, string> headers, string postUrl, string userAgent)
+        {
+            if (string.IsNullOrEmpty(postUrl))
+                throw new ArgumentNullException(nameof(postUrl));
+
+            if (headers == null)
+                headers = new Dictionary<string, string>();
+
+            if (paramDict == null)
+                paramDict = new Dictionary<string, object>();
+
+
+            using (var wb = new WebClient())
+            {
+                foreach (var kvp in headers)
+                {
+                    wb.Headers.Add(kvp.Key, kvp.Value);
+                }
+
+                var postData = new System.Collections.Specialized.NameValueCollection();
+                foreach (var o in paramDict)
+                {
+                    postData.Add(o.Key, o.Value.ToString());
+                }
+
+
+                if (!string.IsNullOrEmpty(postUrl) && !headers.ContainsKey("User-Agent"))
+                    wb.Headers.Add("User-Agent", userAgent);
+              
+                if (!string.IsNullOrEmpty(postUrl) && !headers.ContainsKey("Content-Type"))
+                    wb.Headers.Add("Content-Type", "application/x-www-form-urlencoded");
+
+
+
+
+                byte[] responseBytes = wb.UploadValues(postUrl, "POST", postData);
+                return Encoding.UTF8.GetString(responseBytes);
+            }
+        }
+
+
+        public static string WebPostForm(Dictionary<string, object> paramDict, Dictionary<string, string> headers, string postUrl, string userAgent)
+        {
+            var responseStreamResult = FormUpload.MultipartFormDataPost(postUrl, userAgent, paramDict, headers);
+            if (responseStreamResult != null)
+            {
+                var enc = Encoding.UTF8;
+                using (var reader = new StreamReader(responseStreamResult.GetResponseStream(), enc))
+                {
+                    return reader.ReadToEnd();
+                }
+            }
+            return null;
+        }
+
+        public static string[] GetProcNameList()
+        {
+            return Process.GetProcesses().Select(x => x.ProcessName).ToArray();
+        }
+
+        public static string[] GetLocalIps()
+        {
+            var list = new List<string>();
+
+            foreach (var netInterface in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                var ipProps = netInterface?.GetIPProperties();
+                if (ipProps == null)
+                    continue;
+
+                list.AddRange(ipProps.UnicastAddresses.Select(addr => addr.Address.ToString()));
+            }
+
+            return list.ToArray();
+
+        }
+
+        public static string GetComputerUpTime()
+        {
+            return new ManagementObjectSearcher("SELECT LastBootUpTime FROM Win32_OperatingSystem").Get()
+                .OfType<ManagementObject>()
+                .First()
+                .Properties["LastBootUpTime"].Value.ToString();
+        }
+    }
+
+
+}

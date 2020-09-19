@@ -1,0 +1,10 @@
+﻿namespace OctopusNET.Services
+{
+    internal interface IWorker : System.IDisposable
+    {
+        void Start();
+        void Cancel();
+        void Wait();
+        event System.EventHandler Completed;
+    }
+}

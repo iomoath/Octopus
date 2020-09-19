@@ -1,0 +1,81 @@
+﻿using System;
+using System.ComponentModel;
+using System.Threading;
+
+namespace OctopusNET.Services
+{
+    internal abstract class TaskWorker : IWorker
+    {
+        private readonly BackgroundWorker _backgroundWorker;
+        private readonly ManualResetEvent _completedEvent = new ManualResetEvent(false);
+
+        private bool IsInProgress => _backgroundWorker.IsBusy;
+
+        protected TaskWorker()
+        {
+            _backgroundWorker = new BackgroundWorker();
+            _backgroundWorker.DoWork += OnBackgroundWorkerOnDoWork;
+            _backgroundWorker.RunWorkerCompleted += BackgroundWorkerOnRunWorkerCompleted;
+        }
+
+        private void OnBackgroundWorkerOnDoWork(object sender, DoWorkEventArgs args)
+        {
+            _completedEvent.Reset();
+            try
+            {
+                Work(args);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception)
+            {
+                //
+            }
+        }
+
+        private void BackgroundWorkerOnRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs runWorkerCompletedEventArgs)
+        {
+            _completedEvent.Set();
+            OnCompleted();
+        }
+
+        protected abstract void Work(DoWorkEventArgs args);
+
+        public void Start()
+        {
+            if (IsInProgress) return;
+            _backgroundWorker.RunWorkerAsync();
+        }
+
+        public void Cancel()
+        {
+            if (!IsInProgress) return;
+            _backgroundWorker.CancelAsync();
+            OnCancelled();
+        }
+
+        protected virtual void OnCancelled() { }
+
+        public void Wait()
+        {
+            _completedEvent.WaitOne();
+        }
+
+        public event EventHandler Completed;
+
+        public void Dispose()
+        {
+            Cancel();
+            _completedEvent.WaitOne();
+            _completedEvent.Close();
+            _backgroundWorker.Dispose();
+        }
+
+        protected virtual void OnCompleted()
+        {
+            Completed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+}
