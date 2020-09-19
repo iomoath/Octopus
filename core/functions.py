@@ -466,6 +466,7 @@ def interact_help():
     print("download \t\t\tdownload file from the target machine")
     print("deploy_cobalt_beacon \t\tdeploy cobalt strike powershell beacon in the current process")
     print("load \t\t\t\tload powershell module to the target machine")
+    print("load_assembly \t\t\t\tload & execute an assembly [dotnet agent]")
     print("disable_amsi \t\t\tdisable AMSI on the target machine")
     print("report \t\t\t\tget situation report from the target")
     print("\n")
